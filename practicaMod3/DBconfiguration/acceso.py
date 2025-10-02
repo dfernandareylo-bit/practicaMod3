@@ -45,9 +45,56 @@ def obtener_datos_usuario(username, password):
         print("Error al consultar la base de datos:", e)
     finally:
         conn.close()
+
+def registrar_nuevo_usuario():
+    conn = conectar_db()
+    if not conn:
+        return
+    
+    try:
+        nombre = input("Nombre completo: ")
+        correo = input("Correo electrónico: ")
+        telefono = input("Teléfono: ")
+        fecha_nacimiento = input("Fecha de nacimiento (YYYY-MM-DD): ")
+        username = input("Nombre de usuario: ")
+        password = getpass.getpass("Contraseña: ")
+
+        with conn.cursor() as cursor:
+            # Insertar usuarios
+            cursor.execute("""
+                INSERT INTO usuarios (nombre, correo, telefono, fecha_nacimiento)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id_usuario;
+            """, (nombre, correo, telefono, fecha_nacimiento))
+            
+            id_usuario = cursor.fetchone()[0]
+
+            # Insertar redenciales
+            cursor.execute("""
+                INSERT INTO credenciales (id_usuario, username, password_hash)
+                VALUES (%s, %s, %s);
+            """, (id_usuario, username, password))
+            
+            conn.commit()
+            print("Usuario registrado correctamente.")
+    except Exception as e:
+        conn.rollback()
+        print("Error al registrar el usuario:", e)
+    finally:
+        conn.close()
                                                 
 if __name__ == "__main__":
-    print("Inicio de sesión en la base de datos")
-    user = input("Ingrese su usuario: ")
-    pwd = getpass.getpass("Ingrese su contraseña: ")
-    obtener_datos_usuario(user, pwd)
+    print("Menú (Capture una opción)")
+    print("\n")
+    print("1. Iniciar sesión")
+    print("2. Registrar nuevo usuario")
+    opcion = input("Seleccione una opción (1/2): ")
+    
+    if opcion == "1":
+        user = input("Ingrese su usuario: ")
+        pwd = getpass.getpass("Ingrese su contraseña: ")
+        obtener_datos_usuario(user, pwd)
+    elif opcion == "2":
+        registrar_nuevo_usuario()
+    else:
+        print("Opción no válida.")
